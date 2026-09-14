@@ -1,0 +1,2568 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+
+    <meta
+        name="viewport"
+        content="width=device-width, initial-scale=1.0"
+    >
+
+    <title>The 33rd Key™</title>
+
+    <link
+        rel="stylesheet"
+        href="{{ url_for('static', filename='css/style.css') }}?v=4"
+    >
+</head>
+
+<body>
+
+    <!-- ORIGINAL COVER SCREEN -->
+
+    <main
+        class="cover-stage"
+        id="coverStage"
+    >
+
+        <div class="cover">
+
+            <button
+                type="button"
+                class="open-hotspot"
+                id="openBook"
+                aria-label="Open The 33rd Key"
+            ></button>
+
+        </div>
+
+    </main>
+
+
+    <!-- ORIGINAL BOOK SCREEN -->
+
+    <main
+        class="stage hidden"
+        id="gameStage"
+    >
+
+        <div
+            class="book"
+            id="book"
+        >
+
+            <!--
+                Invisible hotspot over the EXISTING
+                upper-left label/icon in pages.png.
+            -->
+
+            <button
+                type="button"
+                class="close-hotspot"
+                id="closeBook"
+                aria-label="Close The 33rd Key"
+            ></button>
+
+
+            <!--
+                Invisible hotspot over the EXISTING
+                TURN BACK artwork in pages.png.
+
+                Published desktop geometry:
+                x = 385, y = 875, w = 330, h = 90
+                pages.png = 1536 x 1024
+            -->
+
+            <button
+                type="button"
+                id="turnBack"
+                aria-label="Turn back"
+                style="
+                    position: absolute;
+                    left: 25.065%;
+                    top: 85.449%;
+                    width: 21.484%;
+                    height: 8.789%;
+                    z-index: 30;
+                    margin: 0;
+                    padding: 0;
+                    border: 0;
+                    outline: 0;
+                    background: transparent;
+                    cursor: pointer;
+                "
+            ></button>
+
+
+            <!--
+                Invisible hotspot over the EXISTING
+                TURN PAGE artwork in pages.png.
+
+                Published desktop geometry:
+                x = 835, y = 875, w = 330, h = 90
+                pages.png = 1536 x 1024
+            -->
+
+            <button
+                type="button"
+                id="turnPage"
+                aria-label="Turn page"
+                style="
+                    position: absolute;
+                    left: 54.362%;
+                    top: 85.449%;
+                    width: 21.484%;
+                    height: 8.789%;
+                    z-index: 30;
+                    margin: 0;
+                    padding: 0;
+                    border: 0;
+                    outline: 0;
+                    background: transparent;
+                    cursor: pointer;
+                "
+            ></button>
+
+
+            <!--
+                =====================================================
+                PUBLISHED CANDLE FLAMES
+
+                Right/top flame:
+                x=1446, y=32, w=40, h=64
+
+                Left flame:
+                x=14, y=458, w=20, h=70
+
+                Coordinates are relative to pages.png
+                (1536 x 1024).
+                =====================================================
+            -->
+
+            <canvas
+                id="rightCandleFlame"
+                width="40"
+                height="64"
+                aria-hidden="true"
+                style="
+                    position: absolute;
+                    left: 94.141%;
+                    top: 3.125%;
+                    width: 2.604%;
+                    height: 6.25%;
+                    z-index: 20;
+                    pointer-events: none;
+                    background: transparent;
+                "
+            ></canvas>
+
+            <canvas
+                id="leftCandleFlame"
+                width="20"
+                height="70"
+                aria-hidden="true"
+                style="
+                    position: absolute;
+                    left: 0.911%;
+                    top: 44.727%;
+                    width: 1.302%;
+                    height: 6.836%;
+                    z-index: 20;
+                    pointer-events: none;
+                    background: transparent;
+                "
+            ></canvas>
+
+
+            <div class="puzzle-type">
+                {{ puzzle.type }}
+            </div>
+
+
+            <div class="puzzle-title">
+                {{ puzzle.title }}
+            </div>
+
+
+            <div class="riddle">
+                {{ puzzle.riddle }}
+            </div>
+
+
+            <div class="instructions">
+                {{ puzzle.instructions }}
+            </div>
+
+
+            <div class="puzzle-display">{{- puzzle.display -}}</div>
+
+
+            <form method="POST">
+
+                <input
+                    class="answer-input"
+                    type="text"
+                    name="answer"
+                    placeholder="Enter the key..."
+                    autocomplete="off"
+                    autofocus
+                >
+
+
+                <button
+                    class="try-key"
+                    type="submit"
+                    name="action"
+                    value="answer"
+                >
+                    TRY THE KEY
+                </button>
+
+
+                <button
+                    class="clue-button"
+                    type="submit"
+                    name="action"
+                    value="clue"
+                >
+                    ASK FOR A CLUE
+                </button>
+
+            </form>
+
+
+            {% with messages = get_flashed_messages() %}
+
+                {% if messages %}
+
+                    {% for message in messages %}
+
+                        <div class="feedback">
+                            {{ message }}
+                        </div>
+
+                    {% endfor %}
+
+                {% endif %}
+
+            {% endwith %}
+
+        </div>
+
+    </main>
+
+
+    <script>
+        const coverStage =
+            document.getElementById("coverStage");
+
+        const gameStage =
+            document.getElementById("gameStage");
+
+        const book =
+            document.getElementById("book");
+
+        const openBook =
+            document.getElementById("openBook");
+
+        const closeBook =
+            document.getElementById("closeBook");
+
+
+        const turnBack =
+            document.getElementById("turnBack");
+
+
+        const turnPage =
+            document.getElementById("turnPage");
+
+
+        const rightCandleFlame =
+            document.getElementById(
+                "rightCandleFlame"
+            );
+
+        const leftCandleFlame =
+            document.getElementById(
+                "leftCandleFlame"
+            );
+
+
+        /*
+            =====================================================
+            PUBLISHED CANDLE ANIMATION
+
+            Ported directly from the desktop app.
+
+            Right/top candle:
+                75 ms timer
+                6-step flicker
+
+            Left candle:
+                130 ms timer
+                14-step sway / stretch
+            =====================================================
+        */
+
+
+        function drawRightCandleFlame(
+            canvas,
+            step
+        ) {
+
+            if (!canvas) {
+                return;
+            }
+
+
+            const context =
+                canvas.getContext("2d");
+
+
+            const shifts = [
+                [0, 0],
+                [-1, 1],
+                [1, -1],
+                [0, -2],
+                [-1, 0],
+                [1, 1]
+            ];
+
+
+            const shift =
+                shifts[step];
+
+
+            const dx =
+                shift[0];
+
+            const dy =
+                shift[1];
+
+
+            const w =
+                canvas.width;
+
+            const h =
+                canvas.height;
+
+
+            context.clearRect(
+                0,
+                0,
+                w,
+                h
+            );
+
+
+            /*
+                Outer flame:
+                QColor(255, 184, 65, 105)
+            */
+
+            context.fillStyle =
+                "rgba(255, 184, 65, " +
+                (105 / 255) +
+                ")";
+
+
+            context.beginPath();
+
+            context.ellipse(
+                (w * 0.18) +
+                dx +
+                (w * 0.64) / 2,
+
+                (h * 0.12) +
+                dy +
+                (h * 0.78) / 2,
+
+                (w * 0.64) / 2,
+                (h * 0.78) / 2,
+
+                0,
+                0,
+                Math.PI * 2
+            );
+
+            context.fill();
+
+
+            /*
+                Inner flame:
+                QColor(255, 232, 150, 180)
+            */
+
+            context.fillStyle =
+                "rgba(255, 232, 150, " +
+                (180 / 255) +
+                ")";
+
+
+            context.beginPath();
+
+            context.ellipse(
+                (w * 0.34) +
+                dx +
+                (w * 0.32) / 2,
+
+                (h * 0.22) +
+                dy +
+                (h * 0.55) / 2,
+
+                (w * 0.32) / 2,
+                (h * 0.55) / 2,
+
+                0,
+                0,
+                Math.PI * 2
+            );
+
+            context.fill();
+        }
+
+
+        function drawLeftCandleFlame(
+            canvas,
+            step
+        ) {
+
+            if (!canvas) {
+                return;
+            }
+
+
+            const context =
+                canvas.getContext("2d");
+
+
+            const motion = [
+                [-3, 1, 0],
+                [-2, 0, 1],
+                [-1, -1, 2],
+                [0, -2, 3],
+                [1, -2, 4],
+                [2, -1, 3],
+                [3, 0, 2],
+                [4, 1, 0],
+                [3, 0, 1],
+                [2, -1, 2],
+                [1, -2, 3],
+                [0, -1, 2],
+                [-1, 0, 1],
+                [-2, 1, 0]
+            ];
+
+
+            const frame =
+                motion[step];
+
+
+            const dx =
+                frame[0];
+
+            const dy =
+                frame[1];
+
+            const stretch =
+                frame[2];
+
+
+            const w =
+                canvas.width;
+
+            const h =
+                canvas.height;
+
+
+            context.clearRect(
+                0,
+                0,
+                w,
+                h
+            );
+
+
+            /*
+                Outer swaying flame:
+                QColor(255, 184, 65, 145)
+            */
+
+            const outerX =
+                (w * 0.18) +
+                dx;
+
+            const outerY =
+                (h * 0.12) +
+                dy -
+                stretch;
+
+            const outerWidth =
+                w * 0.64;
+
+            const outerHeight =
+                (h * 0.78) +
+                stretch;
+
+
+            context.fillStyle =
+                "rgba(255, 184, 65, " +
+                (145 / 255) +
+                ")";
+
+
+            context.beginPath();
+
+            context.ellipse(
+                outerX +
+                outerWidth / 2,
+
+                outerY +
+                outerHeight / 2,
+
+                outerWidth / 2,
+                outerHeight / 2,
+
+                0,
+                0,
+                Math.PI * 2
+            );
+
+            context.fill();
+
+
+            /*
+                Inner swaying flame:
+                QColor(255, 232, 150, 180)
+            */
+
+            const innerX =
+                (w * 0.34) +
+                dx;
+
+            const innerY =
+                (h * 0.22) +
+                dy -
+                stretch;
+
+            const innerWidth =
+                w * 0.32;
+
+            const innerHeight =
+                (h * 0.55) +
+                stretch;
+
+
+            context.fillStyle =
+                "rgba(255, 232, 150, " +
+                (180 / 255) +
+                ")";
+
+
+            context.beginPath();
+
+            context.ellipse(
+                innerX +
+                innerWidth / 2,
+
+                innerY +
+                innerHeight / 2,
+
+                innerWidth / 2,
+                innerHeight / 2,
+
+                0,
+                0,
+                Math.PI * 2
+            );
+
+            context.fill();
+        }
+
+
+        let rightFlameStep =
+            0;
+
+        let leftFlameStep =
+            0;
+
+
+        drawRightCandleFlame(
+            rightCandleFlame,
+            rightFlameStep
+        );
+
+        drawLeftCandleFlame(
+            leftCandleFlame,
+            leftFlameStep
+        );
+
+
+        window.setInterval(
+            function () {
+
+                rightFlameStep =
+                    (
+                        rightFlameStep +
+                        1
+                    ) % 6;
+
+
+                drawRightCandleFlame(
+                    rightCandleFlame,
+                    rightFlameStep
+                );
+
+            },
+            75
+        );
+
+
+        window.setInterval(
+            function () {
+
+                leftFlameStep =
+                    (
+                        leftFlameStep +
+                        1
+                    ) % 14;
+
+
+                drawLeftCandleFlame(
+                    leftCandleFlame,
+                    leftFlameStep
+                );
+
+            },
+            130
+        );
+
+
+        /*
+            CURRENT SPREAD
+
+            Kept in sync when AJAX page turns complete.
+        */
+
+        let currentSpread =
+            {{ spread | tojson }};
+
+
+        /*
+            FLASK TELLS US WHETHER A SUCCESSFUL
+            ANSWER IS WAITING FOR THE PAGE TURN.
+        */
+
+        const turnPending =
+            {{ turn_pending | tojson }};
+
+
+        /*
+            REMEMBER WHETHER THE BOOK IS OPEN.
+        */
+
+        const bookIsOpen =
+            sessionStorage.getItem(
+                "the33rdKeyBookOpen"
+            ) === "true";
+
+
+        if (bookIsOpen) {
+
+            coverStage.classList.add("hidden");
+            gameStage.classList.remove("hidden");
+
+        } else {
+
+            coverStage.classList.remove("hidden");
+            gameStage.classList.add("hidden");
+
+        }
+
+
+        /*
+            OPEN THE BOOK
+        */
+
+        openBook.addEventListener(
+            "click",
+            function () {
+
+                sessionStorage.setItem(
+                    "the33rdKeyBookOpen",
+                    "true"
+                );
+
+                coverStage.classList.add("hidden");
+                gameStage.classList.remove("hidden");
+
+            }
+        );
+
+
+        /*
+            CLOSE THE BOOK
+        */
+
+        closeBook.addEventListener(
+            "click",
+            function () {
+
+                sessionStorage.setItem(
+                    "the33rdKeyBookOpen",
+                    "false"
+                );
+
+                gameStage.classList.add("hidden");
+                coverStage.classList.remove("hidden");
+
+            }
+        );
+
+
+        /*
+            =====================================================
+            PAGE TURN HELPERS
+            =====================================================
+        */
+
+
+        function easeInOutCubic(t) {
+
+            if (t < 0.5) {
+                return 4 * t * t * t;
+            }
+
+            return 1 -
+                Math.pow(-2 * t + 2, 3) / 2;
+        }
+
+
+        /*
+            CAPTURE THE CURRENT BOOK ONCE.
+        */
+
+        function createPageSnapshot() {
+
+            const bookRect =
+                book.getBoundingClientRect();
+
+            const snapshot =
+                book.cloneNode(true);
+
+            snapshot.removeAttribute("id");
+
+            snapshot
+                .querySelectorAll("[id]")
+                .forEach(function (element) {
+
+                    element.removeAttribute("id");
+
+                });
+
+
+            snapshot.style.position =
+                "absolute";
+
+            snapshot.style.width =
+                bookRect.width + "px";
+
+            snapshot.style.height =
+                bookRect.height + "px";
+
+            snapshot.style.margin =
+                "0";
+
+            snapshot.style.boxShadow =
+                "none";
+
+            snapshot.style.pointerEvents =
+                "none";
+
+
+            /*
+                RIGHT PAGE CAPTURE REGION
+
+                x = 790
+                y = 150
+                w = 500
+                h = 650
+
+                pages.png = 1536 x 1024
+            */
+
+            snapshot.style.left =
+                -(
+                    bookRect.width *
+                    (790 / 1536)
+                ) + "px";
+
+            snapshot.style.top =
+                -(
+                    bookRect.height *
+                    (150 / 1024)
+                ) + "px";
+
+
+            return snapshot;
+        }
+
+
+        /*
+            CAPTURE THE CURRENT LEFT PAGE ONCE.
+
+            Published desktop geometry:
+
+            x = 245
+            y = 150
+            w = 500
+            h = 650
+        */
+
+        function createLeftPageSnapshot() {
+
+            const bookRect =
+                book.getBoundingClientRect();
+
+            const snapshot =
+                book.cloneNode(true);
+
+            snapshot.removeAttribute("id");
+
+            snapshot
+                .querySelectorAll("[id]")
+                .forEach(function (element) {
+
+                    element.removeAttribute("id");
+
+                });
+
+
+            snapshot.style.position =
+                "absolute";
+
+            snapshot.style.width =
+                bookRect.width + "px";
+
+            snapshot.style.height =
+                bookRect.height + "px";
+
+            snapshot.style.margin =
+                "0";
+
+            snapshot.style.boxShadow =
+                "none";
+
+            snapshot.style.pointerEvents =
+                "none";
+
+
+            snapshot.style.left =
+                -(
+                    bookRect.width *
+                    (245 / 1536)
+                ) + "px";
+
+            snapshot.style.top =
+                -(
+                    bookRect.height *
+                    (150 / 1024)
+                ) + "px";
+
+
+            return snapshot;
+        }
+
+
+        /*
+            CREATE ONE TURNING PAGE.
+
+            The OUTER wrapper changes its actual
+            width and left position during the turn.
+        */
+
+        function createTurningPage(
+            capturedSnapshot
+        ) {
+
+            const bookRect =
+                book.getBoundingClientRect();
+
+
+            const pageWidth =
+                bookRect.width *
+                (500 / 1536);
+
+            const pageHeight =
+                bookRect.height *
+                (650 / 1024);
+
+            const pageTop =
+                bookRect.height *
+                (150 / 1024);
+
+            const centerX =
+                bookRect.width * 0.5;
+
+
+            const wrapper =
+                document.createElement("div");
+
+
+            wrapper.style.position =
+                "absolute";
+
+            wrapper.style.top =
+                pageTop + "px";
+
+            wrapper.style.left =
+                centerX + "px";
+
+            wrapper.style.width =
+                pageWidth + "px";
+
+            wrapper.style.height =
+                pageHeight + "px";
+
+            wrapper.style.overflow =
+                "hidden";
+
+            wrapper.style.pointerEvents =
+                "none";
+
+            wrapper.style.zIndex =
+                "50";
+
+
+            /*
+                INNER PAGE SURFACE
+
+                This contains the frozen original
+                right-page image.
+            */
+
+            const surface =
+                document.createElement("div");
+
+
+            surface.style.position =
+                "absolute";
+
+            surface.style.left =
+                "0";
+
+            surface.style.top =
+                "0";
+
+            surface.style.width =
+                pageWidth + "px";
+
+            surface.style.height =
+                pageHeight + "px";
+
+            surface.style.overflow =
+                "hidden";
+
+            surface.style.transformOrigin =
+                "left top";
+
+            surface.style.transform =
+                "scaleX(1)";
+
+            surface.style.pointerEvents =
+                "none";
+
+
+            const snapshot =
+                capturedSnapshot.cloneNode(true);
+
+
+            surface.appendChild(
+                snapshot
+            );
+
+
+            /*
+                SHADOW LAYER
+            */
+
+            const shadow =
+                document.createElement("div");
+
+
+            shadow.style.position =
+                "absolute";
+
+            shadow.style.inset =
+                "0";
+
+            shadow.style.pointerEvents =
+                "none";
+
+            shadow.style.background =
+                "linear-gradient(" +
+                "to right," +
+                "rgba(0,0,0,0.47)," +
+                "rgba(0,0,0,0)" +
+                ")";
+
+
+            wrapper.appendChild(
+                surface
+            );
+
+            wrapper.appendChild(
+                shadow
+            );
+
+            book.appendChild(
+                wrapper
+            );
+
+
+            return {
+                wrapper: wrapper,
+                surface: surface,
+                shadow: shadow,
+                pageWidth: pageWidth,
+                centerX: centerX
+            };
+        }
+
+
+        /*
+            CREATE ONE BACKWARD-TURNING PAGE.
+
+            Starts on the LEFT page and collapses
+            toward the center seam.
+        */
+
+        function createBackwardTurningPage(
+            capturedSnapshot
+        ) {
+
+            const bookRect =
+                book.getBoundingClientRect();
+
+
+            const pageWidth =
+                bookRect.width *
+                (500 / 1536);
+
+            const pageHeight =
+                bookRect.height *
+                (650 / 1024);
+
+            const pageTop =
+                bookRect.height *
+                (150 / 1024);
+
+            const centerX =
+                bookRect.width * 0.5;
+
+
+            const wrapper =
+                document.createElement("div");
+
+
+            wrapper.style.position =
+                "absolute";
+
+            wrapper.style.top =
+                pageTop + "px";
+
+            wrapper.style.left =
+                (
+                    centerX -
+                    pageWidth
+                ) + "px";
+
+            wrapper.style.width =
+                pageWidth + "px";
+
+            wrapper.style.height =
+                pageHeight + "px";
+
+            wrapper.style.overflow =
+                "hidden";
+
+            wrapper.style.pointerEvents =
+                "none";
+
+            wrapper.style.zIndex =
+                "50";
+
+
+            const surface =
+                document.createElement("div");
+
+
+            surface.style.position =
+                "absolute";
+
+            surface.style.left =
+                "0";
+
+            surface.style.top =
+                "0";
+
+            surface.style.width =
+                pageWidth + "px";
+
+            surface.style.height =
+                pageHeight + "px";
+
+            surface.style.overflow =
+                "hidden";
+
+            surface.style.transformOrigin =
+                "left top";
+
+            surface.style.transform =
+                "scaleX(1)";
+
+            surface.style.pointerEvents =
+                "none";
+
+
+            const snapshot =
+                capturedSnapshot.cloneNode(true);
+
+
+            surface.appendChild(
+                snapshot
+            );
+
+
+            const shadow =
+                document.createElement("div");
+
+
+            shadow.style.position =
+                "absolute";
+
+            shadow.style.inset =
+                "0";
+
+            shadow.style.pointerEvents =
+                "none";
+
+            shadow.style.background =
+                "linear-gradient(" +
+                "to right," +
+                "rgba(0,0,0,0)," +
+                "rgba(0,0,0,0.47)" +
+                ")";
+
+
+            wrapper.appendChild(
+                surface
+            );
+
+            wrapper.appendChild(
+                shadow
+            );
+
+            book.appendChild(
+                wrapper
+            );
+
+
+            return {
+                wrapper: wrapper,
+                surface: surface,
+                shadow: shadow,
+                pageWidth: pageWidth,
+                centerX: centerX
+            };
+        }
+
+
+        /*
+            LOAD NEXT / PREVIOUS SPREAD AT MIDPOINT
+        */
+
+        function loadNextSpread(html) {
+
+            const parser =
+                new DOMParser();
+
+            const nextDocument =
+                parser.parseFromString(
+                    html,
+                    "text/html"
+                );
+
+
+            const selectors = [
+                ".puzzle-type",
+                ".puzzle-title",
+                ".riddle",
+                ".instructions",
+                ".puzzle-display"
+            ];
+
+
+            selectors.forEach(
+                function (selector) {
+
+                    const current =
+                        document.querySelector(
+                            selector
+                        );
+
+                    const next =
+                        nextDocument.querySelector(
+                            selector
+                        );
+
+
+                    if (current && next) {
+
+                        current.innerHTML =
+                            next.innerHTML;
+                    }
+
+                }
+            );
+
+
+            const feedback =
+                document.querySelector(
+                    ".feedback"
+                );
+
+            const nextFeedback =
+                nextDocument.querySelector(
+                    ".feedback"
+                );
+
+
+            if (feedback) {
+
+                feedback.innerHTML =
+                    nextFeedback
+                        ? nextFeedback.innerHTML
+                        : "";
+
+            }
+
+
+            const answerInput =
+                document.querySelector(
+                    ".answer-input"
+                );
+
+            const tryKey =
+                document.querySelector(
+                    ".try-key"
+                );
+
+            const clueButton =
+                document.querySelector(
+                    ".clue-button"
+                );
+
+
+            if (answerInput) {
+
+                answerInput.value =
+                    "";
+
+                answerInput.disabled =
+                    false;
+
+            }
+
+
+            if (tryKey) {
+
+                tryKey.disabled =
+                    false;
+
+            }
+
+
+            if (clueButton) {
+
+                clueButton.disabled =
+                    false;
+
+            }
+        }
+
+
+        /*
+            =====================================================
+            ONE CONTINUOUS PAGE TURN
+
+            720 ms total.
+
+            FIRST HALF:
+            width shrinks toward spine.
+
+            SECOND HALF:
+            width grows from spine toward left.
+
+            No transform-origin switch.
+            No second page element.
+            =====================================================
+        */
+
+        function performContinuousTurn(
+            turningPage,
+            duration,
+            midpointCallback
+        ) {
+
+            return new Promise(function (resolve) {
+
+                const startTime =
+                    performance.now();
+
+                let midpointDone =
+                    false;
+
+
+                function step(now) {
+
+                    const elapsed =
+                        now - startTime;
+
+                    const rawProgress =
+                        Math.min(
+                            elapsed / duration,
+                            1
+                        );
+
+                    const progress =
+                        easeInOutCubic(
+                            rawProgress
+                        );
+
+
+                    /*
+                        FIRST HALF
+
+                        x = center
+                        width = full page -> 3px
+                    */
+
+                    if (progress < 0.5) {
+
+                        const local =
+                            progress / 0.5;
+
+
+                        const width =
+                            Math.max(
+                                3,
+                                turningPage.pageWidth *
+                                (1 - local)
+                            );
+
+
+                        const ratio =
+                            width /
+                            turningPage.pageWidth;
+
+
+                        turningPage.wrapper.style.left =
+                            turningPage.centerX +
+                            "px";
+
+                        turningPage.wrapper.style.width =
+                            width +
+                            "px";
+
+                        turningPage.surface.style.transform =
+                            "scaleX(" +
+                            ratio +
+                            ")";
+
+
+                        turningPage.shadow.style.background =
+                            "linear-gradient(" +
+                            "to right," +
+                            "rgba(0,0,0,0.47)," +
+                            "rgba(0,0,0,0)" +
+                            ")";
+
+                    } else {
+
+
+                        /*
+                            MIDPOINT
+
+                            Runs once.
+                        */
+
+                        if (!midpointDone) {
+
+                            midpointDone =
+                                true;
+
+                            midpointCallback();
+
+                        }
+
+
+                        /*
+                            SECOND HALF
+
+                            width = 3px -> full page
+
+                            x = center - width
+
+                            The left edge moves naturally
+                            away from the spine.
+                        */
+
+                        const local =
+                            (
+                                progress -
+                                0.5
+                            ) / 0.5;
+
+
+                        const width =
+                            Math.max(
+                                3,
+                                turningPage.pageWidth *
+                                local
+                            );
+
+
+                        const ratio =
+                            width /
+                            turningPage.pageWidth;
+
+
+                        const left =
+                            turningPage.centerX -
+                            width;
+
+
+                        turningPage.wrapper.style.left =
+                            left +
+                            "px";
+
+                        turningPage.wrapper.style.width =
+                            width +
+                            "px";
+
+                        turningPage.surface.style.transform =
+                            "scaleX(" +
+                            ratio +
+                            ")";
+
+
+                        turningPage.shadow.style.background =
+                            "linear-gradient(" +
+                            "to right," +
+                            "rgba(0,0,0,0)," +
+                            "rgba(0,0,0,0.43)" +
+                            ")";
+
+                    }
+
+
+                    if (rawProgress < 1) {
+
+                        requestAnimationFrame(
+                            step
+                        );
+
+                    } else {
+
+                        resolve();
+
+                    }
+                }
+
+
+                requestAnimationFrame(
+                    step
+                );
+
+            });
+        }
+
+
+        /*
+            =====================================================
+            FORWARD PAGE TURN
+
+            success
+                ↓
+            900 ms pause
+                ↓
+            ONE 720 ms turn
+                ↓
+            midpoint at 360 ms
+                ↓
+            next puzzle
+            =====================================================
+        */
+
+        async function performPageTurn() {
+
+            const answerInput =
+                document.querySelector(
+                    ".answer-input"
+                );
+
+            const tryKey =
+                document.querySelector(
+                    ".try-key"
+                );
+
+            const clueButton =
+                document.querySelector(
+                    ".clue-button"
+                );
+
+
+            /*
+                Lock controls after success.
+            */
+
+            if (answerInput) {
+
+                answerInput.disabled =
+                    true;
+
+            }
+
+
+            if (tryKey) {
+
+                tryKey.disabled =
+                    true;
+
+            }
+
+
+            if (clueButton) {
+
+                clueButton.disabled =
+                    true;
+
+            }
+
+
+            /*
+                Capture current right page ONCE.
+            */
+
+            const capturedPage =
+                createPageSnapshot();
+
+
+            /*
+                Create ONE turning element.
+            */
+
+            const turningPage =
+                createTurningPage(
+                    capturedPage
+                );
+
+
+            /*
+                Ask Flask for the next spread.
+            */
+
+            const advanceRequest =
+                fetch(
+                    "{{ url_for('advance') }}",
+                    {
+                        method: "POST"
+                    }
+                )
+                .then(
+                    function (response) {
+
+                        return response.text();
+
+                    }
+                );
+
+
+            let nextHtml =
+                null;
+
+            let spreadLoaded =
+                false;
+
+
+            const nextSpreadPromise =
+                advanceRequest.then(
+                    function (html) {
+
+                        nextHtml =
+                            html;
+
+                        return html;
+
+                    }
+                );
+
+
+            /*
+                ONE 720 ms ANIMATION.
+            */
+
+            await performContinuousTurn(
+
+                turningPage,
+
+                720,
+
+                function () {
+
+                    /*
+                        MIDPOINT
+
+                        Put the next puzzle underneath
+                        the turning sheet.
+                    */
+
+                    if (
+                        nextHtml !== null &&
+                        !spreadLoaded
+                    ) {
+
+                        loadNextSpread(
+                            nextHtml
+                        );
+
+                        currentSpread += 1;
+
+                        spreadLoaded =
+                            true;
+
+                    } else {
+
+                        nextSpreadPromise.then(
+                            function (html) {
+
+                                if (!spreadLoaded) {
+
+                                    loadNextSpread(
+                                        html
+                                    );
+
+                                    currentSpread += 1;
+
+                                    spreadLoaded =
+                                        true;
+
+                                }
+
+                            }
+                        );
+
+                    }
+
+                }
+            );
+
+
+            /*
+                Entire page turn is finished.
+            */
+
+            turningPage.wrapper.remove();
+
+
+            /*
+                Ensure Flask response has completed.
+            */
+
+            const finalHtml =
+                await nextSpreadPromise;
+
+
+            if (!spreadLoaded) {
+
+                loadNextSpread(
+                    finalHtml
+                );
+
+                currentSpread += 1;
+
+                spreadLoaded =
+                    true;
+
+            }
+
+
+            /*
+                Restore focus.
+            */
+
+            const newAnswerInput =
+                document.querySelector(
+                    ".answer-input"
+                );
+
+
+            if (newAnswerInput) {
+
+                newAnswerInput.focus();
+
+            }
+        }
+
+
+
+        /*
+            =====================================================
+            ONE CONTINUOUS BACKWARD PAGE TURN
+
+            Published behavior:
+
+            LEFT page shrinks toward center,
+            previous spread loads at midpoint,
+            SAME captured page grows onto RIGHT.
+
+            Total duration = 720 ms.
+            =====================================================
+        */
+
+        function performContinuousBackTurn(
+            turningPage,
+            duration,
+            midpointCallback
+        ) {
+
+            return new Promise(function (resolve) {
+
+                const startTime =
+                    performance.now();
+
+                let midpointDone =
+                    false;
+
+
+                function step(now) {
+
+                    const elapsed =
+                        now - startTime;
+
+                    const rawProgress =
+                        Math.min(
+                            elapsed / duration,
+                            1
+                        );
+
+                    const progress =
+                        easeInOutCubic(
+                            rawProgress
+                        );
+
+
+                    /*
+                        FIRST HALF
+
+                        width = full page -> 3 px
+                        x = center - width
+                    */
+
+                    if (progress < 0.5) {
+
+                        const local =
+                            progress / 0.5;
+
+                        const width =
+                            Math.max(
+                                3,
+                                turningPage.pageWidth *
+                                (1 - local)
+                            );
+
+                        const ratio =
+                            width /
+                            turningPage.pageWidth;
+
+                        const left =
+                            turningPage.centerX -
+                            width;
+
+
+                        turningPage.wrapper.style.left =
+                            left + "px";
+
+                        turningPage.wrapper.style.width =
+                            width + "px";
+
+                        turningPage.surface.style.transform =
+                            "scaleX(" + ratio + ")";
+
+
+                        turningPage.shadow.style.background =
+                            "linear-gradient(" +
+                            "to right," +
+                            "rgba(0,0,0,0)," +
+                            "rgba(0,0,0,0.47)" +
+                            ")";
+
+                    } else {
+
+                        if (!midpointDone) {
+
+                            midpointDone =
+                                true;
+
+                            midpointCallback();
+
+                        }
+
+
+                        /*
+                            SECOND HALF
+
+                            width = 3 px -> full page
+                            x = center
+                    */
+
+                        const local =
+                            (
+                                progress -
+                                0.5
+                            ) / 0.5;
+
+                        const width =
+                            Math.max(
+                                3,
+                                turningPage.pageWidth *
+                                local
+                            );
+
+                        const ratio =
+                            width /
+                            turningPage.pageWidth;
+
+
+                        turningPage.wrapper.style.left =
+                            turningPage.centerX + "px";
+
+                        turningPage.wrapper.style.width =
+                            width + "px";
+
+                        turningPage.surface.style.transform =
+                            "scaleX(" + ratio + ")";
+
+
+                        turningPage.shadow.style.background =
+                            "linear-gradient(" +
+                            "to right," +
+                            "rgba(0,0,0,0.43)," +
+                            "rgba(0,0,0,0)" +
+                            ")";
+
+                    }
+
+
+                    if (rawProgress < 1) {
+
+                        requestAnimationFrame(
+                            step
+                        );
+
+                    } else {
+
+                        resolve();
+
+                    }
+                }
+
+
+                requestAnimationFrame(
+                    step
+                );
+
+            });
+        }
+
+
+        /*
+            =====================================================
+            TURN BACK
+
+            Mirrors the published desktop behavior.
+            =====================================================
+        */
+
+        let navigationTurning =
+            false;
+
+
+        async function performTurnBack() {
+
+            if (navigationTurning) {
+                return;
+            }
+
+
+            if (currentSpread <= 1) {
+                return;
+            }
+
+
+            navigationTurning =
+                true;
+
+
+            const answerInput =
+                document.querySelector(
+                    ".answer-input"
+                );
+
+            const tryKey =
+                document.querySelector(
+                    ".try-key"
+                );
+
+            const clueButton =
+                document.querySelector(
+                    ".clue-button"
+                );
+
+
+            if (answerInput) {
+                answerInput.disabled = true;
+            }
+
+            if (tryKey) {
+                tryKey.disabled = true;
+            }
+
+            if (clueButton) {
+                clueButton.disabled = true;
+            }
+
+
+            /*
+                Capture CURRENT left page once.
+            */
+
+            const capturedPage =
+                createLeftPageSnapshot();
+
+
+            const turningPage =
+                createBackwardTurningPage(
+                    capturedPage
+                );
+
+
+            /*
+                Ask Flask for previous spread.
+            */
+
+            const backRequest =
+                fetch(
+                    "{{ url_for('back') }}",
+                    {
+                        method: "POST"
+                    }
+                )
+                .then(
+                    function (response) {
+
+                        return response.text();
+
+                    }
+                );
+
+
+            let previousHtml =
+                null;
+
+            let spreadLoaded =
+                false;
+
+
+            const previousSpreadPromise =
+                backRequest.then(
+                    function (html) {
+
+                        previousHtml =
+                            html;
+
+                        return html;
+
+                    }
+                );
+
+
+            await performContinuousBackTurn(
+
+                turningPage,
+
+                720,
+
+                function () {
+
+                    if (
+                        previousHtml !== null &&
+                        !spreadLoaded
+                    ) {
+
+                        loadNextSpread(
+                            previousHtml
+                        );
+
+                        currentSpread -= 1;
+
+                        spreadLoaded =
+                            true;
+
+                    } else {
+
+                        previousSpreadPromise.then(
+                            function (html) {
+
+                                if (!spreadLoaded) {
+
+                                    loadNextSpread(
+                                        html
+                                    );
+
+                                    currentSpread -= 1;
+
+                                    spreadLoaded =
+                                        true;
+
+                                }
+
+                            }
+                        );
+
+                    }
+
+                }
+            );
+
+
+            turningPage.wrapper.remove();
+
+
+            const finalHtml =
+                await previousSpreadPromise;
+
+
+            if (!spreadLoaded) {
+
+                loadNextSpread(
+                    finalHtml
+                );
+
+                currentSpread -= 1;
+
+                spreadLoaded =
+                    true;
+
+            }
+
+
+            navigationTurning =
+                false;
+
+
+            const newAnswerInput =
+                document.querySelector(
+                    ".answer-input"
+                );
+
+
+            if (newAnswerInput) {
+
+                newAnswerInput.focus();
+
+            }
+        }
+
+
+        if (turnBack) {
+
+            turnBack.addEventListener(
+                "click",
+                performTurnBack
+            );
+
+        }
+
+
+        /*
+            =====================================================
+            MANUAL TURN PAGE
+
+            Published rule:
+
+            - Previously solved spread: may move forward.
+            - Current unsolved spread: page is locked.
+            - No puzzle is solved again.
+            =====================================================
+        */
+
+        async function performManualTurnPage() {
+
+            if (navigationTurning) {
+                return;
+            }
+
+
+            navigationTurning =
+                true;
+
+
+            try {
+
+                const response =
+                    await fetch(
+                        "{{ url_for('forward') }}",
+                        {
+                            method: "POST"
+                        }
+                    );
+
+
+                const allowed =
+                    response.headers.get(
+                        "X-Page-Turn-Allowed"
+                    ) === "true";
+
+
+                const html =
+                    await response.text();
+
+
+                /*
+                    UNSOLVED BOUNDARY
+
+                    Stay on this spread. Only copy Flask's
+                    feedback message into the current page.
+                */
+
+                if (!allowed) {
+
+                    const parser =
+                        new DOMParser();
+
+                    const responseDocument =
+                        parser.parseFromString(
+                            html,
+                            "text/html"
+                        );
+
+                    const responseFeedback =
+                        responseDocument.querySelector(
+                            ".feedback"
+                        );
+
+                    if (responseFeedback) {
+
+                        showFeedback(
+                            responseFeedback.textContent.trim()
+                        );
+
+                    }
+
+
+                    navigationTurning =
+                        false;
+
+                    return;
+                }
+
+
+                /*
+                    SOLVED SPREAD
+
+                    Use the SAME already-working forward
+                    720 ms page animation. The server has
+                    already advanced exactly one spread.
+                */
+
+                const capturedPage =
+                    createPageSnapshot();
+
+
+                const turningPage =
+                    createTurningPage(
+                        capturedPage
+                    );
+
+
+                await performContinuousTurn(
+
+                    turningPage,
+
+                    720,
+
+                    function () {
+
+                        loadNextSpread(
+                            html
+                        );
+
+                        currentSpread += 1;
+
+                    }
+                );
+
+
+                turningPage.wrapper.remove();
+
+
+                const newAnswerInput =
+                    document.querySelector(
+                        ".answer-input"
+                    );
+
+
+                if (newAnswerInput) {
+
+                    newAnswerInput.focus();
+
+                }
+
+
+            } finally {
+
+                navigationTurning =
+                    false;
+
+            }
+        }
+
+
+        if (turnPage) {
+
+            turnPage.addEventListener(
+                "click",
+                performManualTurnPage
+            );
+
+        }
+
+
+        /*
+            =====================================================
+            ANSWER VALIDATION WITHOUT A FULL PAGE RELOAD
+
+            TRY THE KEY is submitted to Flask in the background.
+
+            Wrong answer:
+                update feedback in place.
+
+            Correct answer:
+                show THE KEY TURNS.
+                wait the published 900 ms
+                run the existing page turn.
+
+            ASK FOR A CLUE keeps its existing normal Flask submit
+            behavior for now.
+            =====================================================
+        */
+
+        const puzzleForm =
+            document.querySelector(
+                "form"
+            );
+
+
+        function showFeedback(message) {
+
+            let feedback =
+                document.querySelector(
+                    ".feedback"
+                );
+
+
+            if (!feedback) {
+
+                feedback =
+                    document.createElement(
+                        "div"
+                    );
+
+                feedback.className =
+                    "feedback";
+
+                book.appendChild(
+                    feedback
+                );
+
+            }
+
+
+            feedback.textContent =
+                message;
+        }
+
+
+        if (puzzleForm) {
+
+            puzzleForm.addEventListener(
+                "submit",
+                async function (event) {
+
+                    const submitter =
+                        event.submitter;
+
+                    const action =
+                        submitter
+                            ? submitter.value
+                            : "answer";
+
+
+                    /*
+                        Leave ASK FOR A CLUE on its existing
+                        Flask submit path.
+                    */
+
+                    if (action === "clue") {
+                        return;
+                    }
+
+
+                    /*
+                        TRY THE KEY stays on this page.
+                    */
+
+                    event.preventDefault();
+
+
+                    const answerInput =
+                        document.querySelector(
+                            ".answer-input"
+                        );
+
+                    const tryKey =
+                        document.querySelector(
+                            ".try-key"
+                        );
+
+                    const clueButton =
+                        document.querySelector(
+                            ".clue-button"
+                        );
+
+
+                    const formData =
+                        new FormData(
+                            puzzleForm
+                        );
+
+                    formData.set(
+                        "action",
+                        "answer"
+                    );
+
+
+                    /*
+                        Prevent duplicate submissions while Flask
+                        validates the answer.
+                    */
+
+                    if (answerInput) {
+                        answerInput.disabled = true;
+                    }
+
+                    if (tryKey) {
+                        tryKey.disabled = true;
+                    }
+
+                    if (clueButton) {
+                        clueButton.disabled = true;
+                    }
+
+
+                    try {
+
+                        const response =
+                            await fetch(
+                                window.location.href,
+                                {
+                                    method: "POST",
+                                    body: formData
+                                }
+                            );
+
+
+                        const html =
+                            await response.text();
+
+
+                        const parser =
+                            new DOMParser();
+
+                        const responseDocument =
+                            parser.parseFromString(
+                                html,
+                                "text/html"
+                            );
+
+
+                        const responseFeedback =
+                            responseDocument.querySelector(
+                                ".feedback"
+                            );
+
+
+                        const message =
+                            responseFeedback
+                                ? responseFeedback.textContent.trim()
+                                : "";
+
+
+                        if (message) {
+
+                            showFeedback(
+                                message
+                            );
+
+                        }
+
+
+                        /*
+                            CORRECT ANSWER
+
+                            Flask has already marked turn_pending
+                            in the session. Do not reload the page.
+                            Preserve the published 900 ms pause,
+                            then run the working page turn.
+                        */
+
+                        if (
+                            message ===
+                            "THE KEY TURNS."
+                        ) {
+
+                            window.setTimeout(
+                                performPageTurn,
+                                900
+                            );
+
+                            return;
+                        }
+
+
+                        /*
+                            WRONG / EMPTY ANSWER
+
+                            Restore controls immediately.
+                        */
+
+                        if (answerInput) {
+                            answerInput.disabled = false;
+                            answerInput.focus();
+                        }
+
+                        if (tryKey) {
+                            tryKey.disabled = false;
+                        }
+
+                        if (clueButton) {
+                            clueButton.disabled = false;
+                        }
+
+
+                    } catch (error) {
+
+                        /*
+                            If the background request itself fails,
+                            restore the controls instead of leaving
+                            the book locked.
+                        */
+
+                        if (answerInput) {
+                            answerInput.disabled = false;
+                            answerInput.focus();
+                        }
+
+                        if (tryKey) {
+                            tryKey.disabled = false;
+                        }
+
+                        if (clueButton) {
+                            clueButton.disabled = false;
+                        }
+
+                    }
+
+                }
+            );
+
+        }
+
+
+        /*
+            CORRECT ANSWER PENDING
+
+            Published pause:
+            900 milliseconds.
+        */
+
+        if (
+            turnPending &&
+            bookIsOpen
+        ) {
+
+            const answerInput =
+                document.querySelector(
+                    ".answer-input"
+                );
+
+            const tryKey =
+                document.querySelector(
+                    ".try-key"
+                );
+
+            const clueButton =
+                document.querySelector(
+                    ".clue-button"
+                );
+
+
+            if (answerInput) {
+
+                answerInput.disabled =
+                    true;
+
+            }
+
+
+            if (tryKey) {
+
+                tryKey.disabled =
+                    true;
+
+            }
+
+
+            if (clueButton) {
+
+                clueButton.disabled =
+                    true;
+
+            }
+
+
+            window.setTimeout(
+                performPageTurn,
+                900
+            );
+
+        }
+
+    </script>
+
+</body>
+
+</html>
