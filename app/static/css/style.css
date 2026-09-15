@@ -33,7 +33,7 @@ body {
 
 /* =====================================================
    ORIGINAL BOOK SURFACE
-   pages.png = 2200 x 1434
+   pages.png = 1500 x 1024
    DO NOT ALTER
    ===================================================== */
 
@@ -41,7 +41,7 @@ body {
     position: relative;
 
     width: min(100vw, 150vh);
-    aspect-ratio: 2200 / 1434;
+    aspect-ratio: 1500 / 1024;
 
     flex: 0 0 auto;
 
@@ -122,7 +122,7 @@ body {
     color: #241207;
 
     font-family: Georgia, serif;
-    font-size: clamp(20px, 1.04vw, 16px);
+    font-size: clamp(16px, 1.04vw, 16px);
     font-style: italic;
 
     line-height: 0.9;
@@ -441,4 +441,58 @@ body {
     background: transparent;
 
     cursor: pointer;
+}
+/* =====================================================
+   MOBILE TYPOGRAPHY
+   Shrinks live text with the scaled book on phones.
+   Desktop layout remains unchanged.
+   ===================================================== */
+
+@media (max-width: 768px) {
+
+    .puzzle-type {
+        font-size: 1.5vw;
+        letter-spacing: 0.25vw;
+    }
+
+    .puzzle-title {
+        font-size: 2.4vw;
+    }
+
+    .riddle {
+        font-size: 1.75vw;
+        line-height: 1.05;
+    }
+
+    .instructions {
+        font-size: 1.35vw;
+        line-height: 1.05;
+    }
+
+    .puzzle-display {
+        font-size: 2.15vw;
+        line-height: 1.10;
+        border-radius: 3px;
+    }
+
+    .answer-input {
+        font-size: 2vw;
+        border-width: 1px;
+        border-radius: 3px;
+    }
+
+    .try-key {
+        font-size: 1.6vw;
+        letter-spacing: 0.25vw;
+    }
+
+    .feedback {
+        font-size: 1.5vw;
+        letter-spacing: 0.15vw;
+    }
+
+    .clue-button {
+        font-size: 1.45vw;
+        border-radius: 3px;
+    }
 }
